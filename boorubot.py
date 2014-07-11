@@ -10,7 +10,6 @@ import requests
 import hashlib
 from descgen import gendesc
 
-
 MAX_WIDTH = 1024
 MAX_HEIGHT = 2048
 MAX_SIZE = 3*1024*1024
@@ -36,22 +35,37 @@ parser.add_argument('-u', '--url', default=SITE, help=\
   'which danbooru-based site to search from (default: '+SITE+')')
 parser.add_argument('-o', '--outdir', default=IMG_DIR, help=\
   'the directory to store downloaded images (default: '+IMG_DIR+')')
+parser.add_argument('--dummy', default=False, action='store_true', help=\
+  "don't tweet; print to terminal")
 #parser.add_argument('-t', '--client', default=t, help=\
 #  'where to find t, the ruby twitter client (default: '+t+')')
-#args = parser.parse_args()
+
+class ImageLimitError(Exception):
+    def __init__(self, fn, msg):
+        self.fn = fn
+        self.msg = msg
+    def __str__(self):
+        return repr(self.fn)+': '+repr(self.msg)
+
+class StatusCodeError(Exception):
+    def __init__(self, code, url):
+        self.code = code
+        self.url = url
+    def __str__(self):
+        return 'request for '+repr(self.url)+' returned status code '+repr(self.code)
 
 # subprocess still comes with the same old useless wrappers
 # so we'll write our own
 def poopen(args):
     p = sp.Popen(args, stdout=sp.PIPE, stderr=sp.PIPE)
     out, err = p.communicate()
+    if p.returncode != 0:
+        raise sp.CalledProcessError(returncode=p.returncode, cmd=args, output=err)
     return p.returncode, out, err
 
 def dimensions(f):
     ret, dim, err = poopen(['gm', 'identify', '-format', '%wx%h\n', f])
-    if ret != 0:
-        raise Exception(err)
-    # gifs return multiple lines
+    # gifs return multiple lines, only the first is relevant
     line = str(dim, 'ascii').splitlines()[0]
     dim = line.split('x')
     return int(dim[0]), int(dim[1])
@@ -63,8 +77,6 @@ def resize(f, fout):
     cmd.append(f)
     cmd.append(fout)
     ret, out, err = poopen(cmd)
-    if ret != 0:
-        raise Exception(err)
 
 def jpgize(f, fout, quality=80):
     cmd = 'gm convert -format jpg -quality {:2i}%'.format(quality)
@@ -72,14 +84,10 @@ def jpgize(f, fout, quality=80):
     cmd.append(f)
     cmd.append(fout)
     ret, out, err = poopen(cmd)
-    if ret != 0:
-        raise Exception(err)
 
 def optipng(f, fout):
     shutil.copy2(f, fout)
     ret, out, err = poopen(['optipng', '-o2', fout])
-    if ret != 0:
-        raise Exception(err)
 
 def tweet(text, img=None, trc=None):
     cmd = [t, 'update', text]
@@ -90,16 +98,47 @@ def tweet(text, img=None, trc=None):
         cmd.append('-P')
         cmd.append(trc)
     ret, out, err = poopen(cmd)
-    if ret != 0:
-        raise Exception(err)
 
-def run(args=None):
+def prepimage(fn):
+    w, h = dimensions(fn)
+    #print('{:} by {:}'.format(w, h))
+    _, _, ext = fn.rpartition('.')
+
+    final = fn
+    if ext == 'gif':
+        if fs > MAX_SIZE:
+            raise ImageLimitError(final, "image filesize exceeds limit")
+        if w > MAX_WIDTH or h > MAX_HEIGHT:
+            raise ImageLimitError(final, "image too wide or tall")
+    else:
+        if w > MAX_WIDTH or h > MAX_HEIGHT:
+            fn = 'r-'+fn
+            resize(final, fn)
+            final = fn
+        if ext == 'png':
+            fn = 'o-'+fn
+            optipng(final, fn)
+            final = fn
+
+        quality = 90
+        while os.path.getsize(fn) > MAX_SIZE:
+            fn = 'j-'+fn
+            jpgize(final, fn, quality)
+            quality -= 3
+            if quality < 3:
+                raise ImageLimitError(final, "image cannot get any worse")
+        final = fn
+
+    return final
+
+def run(args):
     a = parser.parse_args(args[1:])
     handle = a.account
     json = a.url + JSON + a.query
     posts = a.url + POSTS
     site = a.url
     outdir = a.outdir
+    dummy = a.dummy
     del a
 
     try:
@@ -116,7 +155,7 @@ def run(args=None):
 
     r = requests.get(json)
     if r.status_code != 200:
-        raise Exception('status code '+r.status_code+' for URL '+json)
+        raise StatusCodeError(r.status_code, json)
 
     j = r.json()
     if type(j) != list:
@@ -131,58 +170,32 @@ def run(args=None):
         _, _, fn = path.rpartition('/')
         md5, _, ext = fn.rpartition('.')
 
-        saved = fn
-        if os.path.isfile(saved):
+        if os.path.isfile(fn):
             #print(md5+' already exists')
             continue
 
         r = requests.get(site+path)
         if r.status_code != 200:
-            raise Exception('status code '+r.status_code+' for URL '+site+path)
+            raise StatusCodeError(r.status_code, site+path)
 
         saved_md5 = hashlib.md5(r.content).hexdigest()
         if md5 != saved_md5:
             raise Exception('md5 mismatch! '+saved_md5+' should be '+md5)
 
         fs = len(r.content)
-        with open(saved, 'bw') as f:
+        with open(fn, 'bw') as f:
             f.write(r.content)
-
-        #print('shoulda saved as '+saved)
-
-        w, h = dimensions(saved)
-        #print('{:} by {:}'.format(w, h))
-
-        #def prepimg(fn):
-        # readimg() would make struct with fmt fs w h md5 fields
-        # fn .ext [fs] .w .h
-        final = fn
-        if ext == 'gif':
-            if fs > MAX_SIZE:
-                lament(fn+' is too big! skipping')
-                continue
-            if w > MAX_WIDTH or h > MAX_HEIGHT:
-                lament(fn+' is too wide or tall! skipping')
-                continue
-        else:
-            if w > MAX_WIDTH or h > MAX_HEIGHT:
-                fn = 'r-'+fn
-                resize(final, fn)
-                final = fn
-            if ext == 'png':
-                fn = 'o-'+fn
-                optipng(final, fn)
-                final = fn
-            quality = 90
-            while os.path.getsize(fn) > MAX_SIZE:
-                fn = 'j-'+fn
-                jpgize(final, fn, quality)
-                quality -= 3
-            final = fn
+        #print('shoulda saved as '+fn)
 
         desc = gendesc(post)
-        tweet(desc+posts+str(post['id']), final, trc)
+        try:
+            final = prepimage(fn)
+        except ImageLimitError as e:
+            lament(str(e))
+            continue
 
+        f = dummy and print or tweet
+        f(desc+posts+str(post['id']), final, trc)
         break
 
     os.chdir(cwd)
