@@ -24,6 +24,7 @@ HOME = os.environ['HOME']
 t = HOME+'/.gem/ruby/2.1.0/bin/t'
 
 lament = lambda *args, **kwargs: print(*args, file=sys.stderr, **kwargs)
+printlines = lambda *args, **kwargs: print('\n'.join(args), **kwargs)
 
 parser = argparse.ArgumentParser(description=\
   'Tweet the topmost result from a danbooru query.''')
@@ -53,6 +54,17 @@ class StatusCodeError(Exception):
         self.url = url
     def __str__(self):
         return 'request for '+repr(self.url)+' returned status code '+repr(self.code)
+
+class HashMismatchError(Exception):
+    def __init__(self, result, desired, hashtype='md5'):
+        self.a = result
+        self.b = desired
+        self.t = str(hashtype)
+    def __str__(self):
+        return self.t+' mismatch between '+repr(self.a)+' and desired '+repr(self.b)
+
+class JsonFormatError(Exception):
+    pass
 
 # subprocess still comes with the same old useless wrappers
 # so we'll write our own
@@ -159,7 +171,7 @@ def run(args):
 
     j = r.json()
     if type(j) != list:
-        raise Exception('bad json (not a list!)')
+        raise JsonFormatError('not a list')
 
     for post in j:
         try:
@@ -168,10 +180,10 @@ def run(args):
             continue
 
         _, _, fn = path.rpartition('/')
-        md5, _, ext = fn.rpartition('.')
+        md5, _, _ = fn.rpartition('.')
 
         if os.path.isfile(fn):
-            #print(md5+' already exists')
+            #print(fn+' already exists')
             continue
 
         r = requests.get(site+path)
@@ -180,7 +192,7 @@ def run(args):
 
         saved_md5 = hashlib.md5(r.content).hexdigest()
         if md5 != saved_md5:
-            raise Exception('md5 mismatch! '+saved_md5+' should be '+md5)
+            raise HashMismatchError(saved_md5, md5)
 
         fs = len(r.content)
         with open(fn, 'bw') as f:
@@ -194,7 +206,7 @@ def run(args):
             lament(str(e))
             continue
 
-        f = dummy and print or tweet
+        f = dummy and printlines or tweet
         f(desc+posts+str(post['id']), final, trc)
         break
 
