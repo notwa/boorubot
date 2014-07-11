@@ -1,5 +1,6 @@
 #!/bin/python
 
+import argparse
 import os
 import os.path
 import sys
@@ -9,21 +10,35 @@ import requests
 import hashlib
 from descgen import gendesc
 
-HANDLE = 'boorubot'
-IMG_DIR = 'hot'
 
 MAX_WIDTH = 1024
 MAX_HEIGHT = 2048
 MAX_SIZE = 3*1024*1024
 
 SITE = 'http://danbooru.donmai.us'
-JSON = SITE+"/posts.json?tags=order:rank"
-POSTS = SITE+"/posts/"
+QUERY = 'order:rank'
+JSON = '/posts.json?tags='
+POSTS = '/posts/'
+IMG_DIR = '.'
 
 HOME = os.environ['HOME']
 t = HOME+'/.gem/ruby/2.1.0/bin/t'
 
 lament = lambda *args, **kwargs: print(*args, file=sys.stderr, **kwargs)
+
+parser = argparse.ArgumentParser(description=\
+  'Tweet the topmost result from a danbooru query.''')
+parser.add_argument('-a', '--account', required=True, help=\
+  'the twitter handle to tweet to (required)')
+parser.add_argument('-q', '--query', default=QUERY, help=\
+  'the query to search with (default: '+QUERY+')')
+parser.add_argument('-u', '--url', default=SITE, help=\
+  'which danbooru-based site to search from (default: '+SITE+')')
+parser.add_argument('-o', '--outdir', default=IMG_DIR, help=\
+  'the directory to store downloaded images (default: '+IMG_DIR+')')
+#parser.add_argument('-t', '--client', default=t, help=\
+#  'where to find t, the ruby twitter client (default: '+t+')')
+#args = parser.parse_args()
 
 # subprocess still comes with the same old useless wrappers
 # so we'll write our own
@@ -79,21 +94,29 @@ def tweet(text, img=None, trc=None):
         raise Exception(err)
 
 def run(args=None):
+    a = parser.parse_args(args[1:])
+    handle = a.account
+    json = a.url + JSON + a.query
+    posts = a.url + POSTS
+    site = a.url
+    outdir = a.outdir
+    del a
+
     try:
-        os.mkdir(IMG_DIR)
+        os.mkdir(outdir)
     except FileExistsError:
         pass
 
     cwd = os.getcwd()
     trc = os.path.join(cwd, '.trc')
-    os.chdir(IMG_DIR)
+    os.chdir(outdir)
 
     shutil.copy2(HOME+'/.trc', trc)
-    poopen([t, 'set', 'active', HANDLE, '-P', trc])
+    poopen([t, 'set', 'active', handle, '-P', trc])
 
-    r = requests.get(JSON)
+    r = requests.get(json)
     if r.status_code != 200:
-        raise Exception('status code '+r.status_code+' for URL '+JSON)
+        raise Exception('status code '+r.status_code+' for URL '+json)
 
     j = r.json()
     if type(j) != list:
@@ -113,9 +136,9 @@ def run(args=None):
             #print(md5+' already exists')
             continue
 
-        r = requests.get(SITE+path)
+        r = requests.get(site+path)
         if r.status_code != 200:
-            raise Exception('status code '+r.status_code+' for URL '+SITE+path)
+            raise Exception('status code '+r.status_code+' for URL '+site+path)
 
         saved_md5 = hashlib.md5(r.content).hexdigest()
         if md5 != saved_md5:
@@ -158,7 +181,7 @@ def run(args=None):
             final = fn
 
         desc = gendesc(post)
-        tweet(desc+POSTS+str(post['id']), final, trc)
+        tweet(desc+posts+str(post['id']), final, trc)
 
         break
 
