@@ -30,7 +30,7 @@ def gendesc(post):
     arts = uniq(spacelist(post['tag_string_artist']))
     cars = uniq(spacelist(post['tag_string_character']))
     cops = uniq(spacelist(post['tag_string_copyright']))
-    maxlen = 140 - 22 - 22 - 1 # limit - link - link - space
+    maxlen = 140 - 22 - 22 - 1 - 1 # limit - link - link - space - space
     maxtags = 5 # per art/car/cop
 
     # h as in human
