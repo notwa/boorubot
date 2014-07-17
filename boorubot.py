@@ -111,7 +111,7 @@ def tweet(text, img=None, trc=None):
         cmd.append(trc)
     ret, out, err = poopen(cmd)
 
-def prepimage(fn):
+def prepimage(fn, fs):
     w, h = dimensions(fn)
     #print('{:} by {:}'.format(w, h))
     _, _, ext = fn.rpartition('.')
@@ -201,7 +201,7 @@ def run(args):
 
         desc = gendesc(post)
         try:
-            final = prepimage(fn)
+            final = prepimage(fn, fs)
         except ImageLimitError as e:
             lament(str(e))
             continue
