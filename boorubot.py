@@ -180,7 +180,10 @@ def run(args):
             continue
 
         _, _, fn = path.rpartition('/')
-        md5, _, _ = fn.rpartition('.')
+        md5, _, ext = fn.rpartition('.')
+
+        if ext == 'webm':
+            continue
 
         if os.path.isfile(fn):
             #print(fn+' already exists')
