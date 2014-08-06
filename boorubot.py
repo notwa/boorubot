@@ -46,25 +46,39 @@ class ImageLimitError(Exception):
         self.fn = fn
         self.msg = msg
     def __str__(self):
-        return repr(self.fn)+': '+repr(self.msg)
+        return '{}: {}'.format(self.fn, self.msg)
 
 class StatusCodeError(Exception):
     def __init__(self, code, url):
         self.code = code
         self.url = url
     def __str__(self):
-        return 'request for '+repr(self.url)+' returned status code '+repr(self.code)
+        return 'request for {} returned status code {}'.format(self.url, self.code)
 
 class HashMismatchError(Exception):
     def __init__(self, result, desired, hashtype='md5'):
         self.a = result
         self.b = desired
-        self.t = str(hashtype)
+        self.t = hashtype
     def __str__(self):
-        return self.t+' mismatch between '+repr(self.a)+' and desired '+repr(self.b)
+        return '{} mismatch between {} and desired {}'.format(self.t, self.a, self.b)
 
 class JsonFormatError(Exception):
     pass
+
+class PoopenError(sp.CalledProcessError):
+    def __init__(self, returncode, cmd, output=None, error=None):
+        self.returncode = returncode
+        self.cmd = cmd
+        self.output = output
+        self.error = error
+    def __str__(self):
+        s = "Command failed with exit status {}:\n{}".format(self.returncode, self.cmd)
+        if self.output:
+            s += "\nstdout:\n{}\n".format(self.output)
+        if self.error:
+            s += "\nstderr:\n{}\n".format(self.error)
+        return s
 
 # subprocess still comes with the same old useless wrappers
 # so we'll write our own
@@ -72,7 +86,7 @@ def poopen(args):
     p = sp.Popen(args, stdout=sp.PIPE, stderr=sp.PIPE)
     out, err = p.communicate()
     if p.returncode != 0:
-        raise sp.CalledProcessError(returncode=p.returncode, cmd=args, output=err)
+        raise PoopenError(returncode=p.returncode, cmd=args, output=out, error=err)
     return p.returncode, out, err
 
 def dimensions(f):
