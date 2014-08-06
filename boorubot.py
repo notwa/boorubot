@@ -157,6 +157,45 @@ def prepimage(fn, fs):
 
     return final
 
+fn = ''
+def tryPost(post, site):
+    try:
+        path = post['file_url']
+    except KeyError:
+        return False, None
+
+    global fn # gross hack for the time being
+    _, _, fn = path.rpartition('/')
+    md5, _, ext = fn.rpartition('.')
+
+    if ext == 'webm':
+        return False, None
+
+    if os.path.isfile(fn):
+        #print(fn+' already exists')
+        return False, None
+
+    r = requests.get(site+path)
+    if r.status_code != 200:
+        raise StatusCodeError(r.status_code, site+path)
+
+    saved_md5 = hashlib.md5(r.content).hexdigest()
+    if md5 != saved_md5:
+        raise HashMismatchError(saved_md5, md5)
+
+    fs = len(r.content)
+    with open(fn, 'bw') as f:
+        f.write(r.content)
+    #print('shoulda saved as '+fn)
+
+    try:
+        final = prepimage(fn, fs)
+    except ImageLimitError as e:
+        lament(str(e))
+        return False, None
+
+    return True, final
+
 def run(args):
     a = parser.parse_args(args[1:])
     handle = a.account
@@ -187,49 +226,22 @@ def run(args):
     if type(j) != list:
         raise JsonFormatError('not a list')
 
-    for post in j:
-        try:
-            path = post['file_url']
-        except KeyError:
-            continue
-
-        _, _, fn = path.rpartition('/')
-        md5, _, ext = fn.rpartition('.')
-
-        if ext == 'webm':
-            continue
-
+    try:
+        for post in j:
+            success, final = tryPost(post, site)
+            if not success:
+                continue
+            desc = gendesc(post)
+            f = dummy and printlines or tweet
+            f(desc+posts+str(post['id']), final, trc)
+            break
+    except:
+        global fn # still gross
         if os.path.isfile(fn):
-            #print(fn+' already exists')
-            continue
-
-        r = requests.get(site+path)
-        if r.status_code != 200:
-            raise StatusCodeError(r.status_code, site+path)
-
-        saved_md5 = hashlib.md5(r.content).hexdigest()
-        if md5 != saved_md5:
-            raise HashMismatchError(saved_md5, md5)
-
-        fs = len(r.content)
-        with open(fn, 'bw') as f:
-            f.write(r.content)
-        #print('shoulda saved as '+fn)
-
-        desc = gendesc(post)
-        try:
-            final = prepimage(fn, fs)
-        except ImageLimitError as e:
-            lament(str(e))
-            continue
-
-        f = dummy and printlines or tweet
-        f(desc+posts+str(post['id']), final, trc)
-        break
-
-    os.chdir(cwd)
-
-# TODO: delete saved file when exception occurs
+            os.rename(fn, 'fail-'+fn)
+        raise
+    finally:
+        os.chdir(cwd)
 
 if __name__ == '__main__':
     ret = 0
