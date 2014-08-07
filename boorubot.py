@@ -8,6 +8,7 @@ import shutil
 import subprocess as sp
 import requests
 import hashlib
+from tcrap import bird
 from descgen import gendesc
 
 MAX_WIDTH = 1024
@@ -21,7 +22,6 @@ POSTS = '/posts/'
 IMG_DIR = '.'
 
 HOME = os.environ['HOME']
-t = HOME+'/.gem/ruby/2.1.0/bin/t'
 
 lament = lambda *args, **kwargs: print(*args, file=sys.stderr, **kwargs)
 printlines = lambda *args, **kwargs: print('\n'.join(args), **kwargs)
@@ -38,8 +38,6 @@ parser.add_argument('-o', '--outdir', default=IMG_DIR, help=\
   'the directory to store downloaded images (default: '+IMG_DIR+')')
 parser.add_argument('--dummy', default=False, action='store_true', help=\
   "don't tweet; print to terminal")
-#parser.add_argument('-t', '--client', default=t, help=\
-#  'where to find t, the ruby twitter client (default: '+t+')')
 
 class ImageLimitError(Exception):
     def __init__(self, fn, msg):
@@ -114,16 +112,6 @@ def jpgize(f, fout, quality=80):
 def optipng(f, fout):
     shutil.copy2(f, fout)
     ret, out, err = poopen(['optipng', '-o2', fout])
-
-def tweet(text, img=None, trc=None):
-    cmd = [t, 'update', text]
-    if img != None:
-        cmd.append('-f')
-        cmd.append(img)
-    if trc != None:
-        cmd.append('-P')
-        cmd.append(trc)
-    ret, out, err = poopen(cmd)
 
 def prepimage(fn, fs):
     w, h = dimensions(fn)
@@ -216,7 +204,7 @@ def run(args):
     os.chdir(outdir)
 
     shutil.copy2(HOME+'/.trc', trc)
-    poopen([t, 'set', 'active', handle, '-P', trc])
+    tweeter = bird(handle, trc)
 
     r = requests.get(json)
     if r.status_code != 200:
@@ -232,8 +220,9 @@ def run(args):
             if not success:
                 continue
             desc = gendesc(post)
-            f = dummy and printlines or tweet
-            f(desc+posts+str(post['id']), final, trc)
+            text = desc+posts+str(post['id'])
+            f = dummy and printlines or tweeter
+            f(text, final)
             break
     except:
         global fn # still gross
