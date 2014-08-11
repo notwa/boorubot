@@ -95,7 +95,7 @@ def dimensions(f):
     return int(dim[0]), int(dim[1])
 
 def resize(f, fout):
-    newsize = '{:}x{:}'.format(MAX_WIDTH, MAX_HEIGHT)
+    newsize = '{}x{}'.format(MAX_WIDTH, MAX_HEIGHT)
     cmd = 'gm convert -resize '+newsize+' -quality 93'
     cmd = cmd.split(' ')
     cmd.append(f)
@@ -103,7 +103,7 @@ def resize(f, fout):
     ret, out, err = poopen(cmd)
 
 def jpgize(f, fout, quality=80):
-    cmd = 'gm convert -format jpg -quality {:2i}%'.format(quality)
+    cmd = 'gm convert -format jpg -quality {}%'.format(int(quality))
     cmd = cmd.split(' ')
     cmd.append(f)
     cmd.append(fout)
@@ -115,7 +115,7 @@ def optipng(f, fout):
 
 def prepimage(fn, fs):
     w, h = dimensions(fn)
-    #print('{:} by {:}'.format(w, h))
+    #print('{} by {}'.format(w, h))
     _, _, ext = fn.rpartition('.')
 
     final = fn
