@@ -156,7 +156,7 @@ def tryPost(post, site):
     _, _, fn = path.rpartition('/')
     md5, _, ext = fn.rpartition('.')
 
-    if ext == 'webm':
+    if ext in ('webm', 'swf'):
         return False, None
 
     if os.path.isfile(fn):
