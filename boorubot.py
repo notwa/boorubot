@@ -1,13 +1,13 @@
 #!/bin/python
 
 import argparse
-import os
-import os.path
+import os, os.path
 import sys
 import shutil
 import subprocess as sp
-import requests
+import requests, requests.exceptions
 import hashlib
+import time
 from tcrap import bird
 from descgen import gendesc
 
@@ -77,6 +77,20 @@ class PoopenError(sp.CalledProcessError):
         if self.error:
             s += "\nstderr:\n{}\n".format(self.error)
         return s
+
+def get(uri, max_retries=6):
+    for i in range(max_retries):
+        try:
+            r = requests.get(uri)
+        except requests.exceptions.ConnectionError:
+            if i + 1 < max_retries:
+                time.sleep(60*5)
+                continue
+            else:
+                raise
+        if r.status_code != 200:
+            raise StatusCodeError(r.status_code, uri)
+        return r
 
 # subprocess still comes with the same old useless wrappers
 # so we'll write our own
@@ -163,10 +177,7 @@ def tryPost(post, site):
         #print(fn+' already exists')
         return False, None
 
-    r = requests.get(site+path)
-    if r.status_code != 200:
-        raise StatusCodeError(r.status_code, site+path)
-
+    r = get(site+path)
     saved_md5 = hashlib.md5(r.content).hexdigest()
     if md5 != saved_md5:
         raise HashMismatchError(saved_md5, md5)
@@ -206,10 +217,7 @@ def run(args):
     shutil.copy2(HOME+'/.trc', trc)
     tweeter = bird(handle, trc)
 
-    r = requests.get(json)
-    if r.status_code != 200:
-        raise StatusCodeError(r.status_code, json)
-
+    r = get(json)
     j = r.json()
     if type(j) != list:
         raise JsonFormatError('not a list')
