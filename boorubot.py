@@ -150,7 +150,7 @@ def prepimage(fn, fs):
 
         quality = 90
         while os.path.getsize(fn) > MAX_SIZE:
-            fn = 'j-'+fn
+            fn = 'j-'+fn.replace('.png', '.jpg')
             jpgize(final, fn, quality)
             quality -= 3
             if quality < 3:
