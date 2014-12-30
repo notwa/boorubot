@@ -82,20 +82,20 @@ def get(uri, max_retries=6):
     for i in range(max_retries):
         try:
             r = requests.get(uri)
-        except requests.exceptions.ConnectionError:
+            if r.status_code != 200:
+                raise StatusCodeError(r.status_code, uri)
+        except (requests.exceptions.ConnectionError, StatusCodeError):
             if i + 1 < max_retries:
                 time.sleep(60*5)
                 continue
             else:
                 raise
-        if r.status_code != 200:
-            raise StatusCodeError(r.status_code, uri)
         return r
 
 # subprocess still comes with the same old useless wrappers
 # so we'll write our own
-def poopen(args):
-    p = sp.Popen(args, stdout=sp.PIPE, stderr=sp.PIPE)
+def poopen(args, env=None):
+    p = sp.Popen(args, stdout=sp.PIPE, stderr=sp.PIPE, env=env)
     out, err = p.communicate()
     if p.returncode != 0:
         raise PoopenError(returncode=p.returncode, cmd=args, output=out, error=err)
@@ -114,7 +114,7 @@ def resize(f, fout):
     cmd = cmd.split(' ')
     cmd.append(f)
     cmd.append(fout)
-    ret, out, err = poopen(cmd)
+    ret, out, err = poopen(cmd, {"TMPDIR": "../tmp"})
 
 def jpgize(f, fout, quality=80):
     cmd = 'gm convert -format jpg -quality {}%'.format(int(quality))
