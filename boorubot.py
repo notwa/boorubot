@@ -78,19 +78,28 @@ class PoopenError(sp.CalledProcessError):
             s += "\nstderr:\n{}\n".format(self.error)
         return s
 
-def get(uri, max_retries=6):
+def get(uri, json=False, max_retries=6):
     for i in range(max_retries):
+        if i > 0:
+            time.sleep(60*5)
+        final = (i + 1 == max_retries)
+
         try:
             r = requests.get(uri)
             if r.status_code != 200:
                 raise StatusCodeError(r.status_code, uri)
         except (requests.exceptions.ConnectionError, StatusCodeError):
-            if i + 1 < max_retries:
-                time.sleep(60*5)
-                continue
-            else:
-                raise
-        return r
+            if final: raise
+            continue
+        if not json:
+            return r
+
+        try:
+            j = r.json()
+        except ValueError:
+            if final: raise
+            continue
+        return j
 
 # subprocess still comes with the same old useless wrappers
 # so we'll write our own
@@ -217,8 +226,7 @@ def run(args):
     shutil.copy2(HOME+'/.trc', trc)
     tweeter = bird(handle, trc)
 
-    r = get(json)
-    j = r.json()
+    j = get(json, json=True)
     if type(j) != list:
         raise JsonFormatError('not a list')
 

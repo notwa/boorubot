@@ -2,7 +2,7 @@
 from birdy import twitter
 import yaml
 import random
-import uuid
+#import uuid
 
 # TODO: bird, birdy, twitter, tweet… so many similar names. rename crap.
 #       also, rename tcrap.
