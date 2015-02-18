@@ -168,17 +168,8 @@ def prepimage(fn, fs):
 
     return final
 
-fn = ''
-def tryPost(post, site):
-    try:
-        path = post['file_url']
-    except KeyError:
-        return False, None
-
-    global fn # gross hack for the time being
-    _, _, fn = path.rpartition('/')
+def tryPost(uri, fn):
     md5, _, ext = fn.rpartition('.')
-
     if ext in ('webm', 'swf', 'zip'):
         return False, None
 
@@ -186,7 +177,7 @@ def tryPost(post, site):
         #print(fn+' already exists')
         return False, None
 
-    r = get(site+path)
+    r = get(uri)
     saved_md5 = hashlib.md5(r.content).hexdigest()
     if md5 != saved_md5:
         raise HashMismatchError(saved_md5, md5)
@@ -230,9 +221,15 @@ def run(args):
     if type(j) != list:
         raise JsonFormatError('not a list')
 
+    fn = None
     try:
         for post in j:
-            success, final = tryPost(post, site)
+            path = post.get('file_url')
+            if path == None:
+                continue
+            _, _, fn = path.rpartition('/')
+
+            success, final = tryPost(site+path, fn)
             if not success:
                 continue
             desc = gendesc(post)
@@ -241,8 +238,7 @@ def run(args):
             f(text, final)
             break
     except:
-        global fn # still gross
-        if os.path.isfile(fn):
+        if fn != None and os.path.isfile(fn):
             os.rename(fn, 'fail-'+fn)
         raise
     finally:
