@@ -21,7 +21,7 @@ def humanlist(t, n):
     if hs == '':
         return '❓'
     if n + 1 < len(t):
-        hs += ', …'
+        hs += '…'
     return hs
 
 def gendesc(post):
@@ -33,6 +33,23 @@ def gendesc(post):
     maxlen = 140 - 22 - 22 - 1 - 1 # limit - link - link - space - space
     maxtags = 5 # per art/car/cop
 
+    fmt = '{0} ({1}) drawn by {2}'
+
+    if 'original' in cops:
+        if cars[0] == '':
+            if len(cops) == 1:
+                fmt = '{1} drawn by {2}'
+            else:
+                cars = ['original']
+                cops.remove('original')
+    if cops[0] == '' and cars[0] == '':
+        fmt = '{1} drawn by {2}'
+
+    if rats[0] == 'e':
+        fmt = '#nsfw ' + fmt
+    #elif rats[0] == 'q':
+    #    fmt = '#lewd ' + fmt
+
     # h as in human
     h_arts = []
     h_cars = []
@@ -42,14 +59,13 @@ def gendesc(post):
         h_cars.append(humanlist(cars, n))
         h_cops.append(humanlist(cops, n))
 
-    fstr = '{:} ({:}) drawn by {:}'
     descs = []
     descs.append('drawn by ' + h_arts[0]) # push comes to shove
     for i in range(maxtags):
         try:
-            descs.append(fstr.format(h_cars[i+0], h_cops[i+0], h_arts[i+0]))
-            descs.append(fstr.format(h_cars[i+0], h_cops[i+0], h_arts[i+1]))
-            descs.append(fstr.format(h_cars[i+1], h_cops[i+0], h_arts[i+1]))
+            descs.append(fmt.format(h_cars[i+0], h_cops[i+0], h_arts[i+0]))
+            descs.append(fmt.format(h_cars[i+0], h_cops[i+0], h_arts[i+1]))
+            descs.append(fmt.format(h_cars[i+1], h_cops[i+0], h_arts[i+1]))
         except IndexError:
             continue
 
@@ -67,6 +83,7 @@ def gendesc(post):
 if __name__ == '__main__':
     SITE = 'http://danbooru.donmai.us'
     JSON = SITE+"/posts.json?tags=order:rank"
+    #JSON = SITE+"/posts.json?tags=copytags:2 chartags:0"
     #JSON = SITE+'/posts.json?tags=bishoujo_senshi_sailor_moon'
     import requests
     r = requests.get(JSON)
