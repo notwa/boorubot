@@ -7,6 +7,7 @@ import shutil
 import subprocess as sp
 import requests, requests.exceptions
 import hashlib
+
 from tcrap import bird
 from descgen import gendesc
 from retry import retry
@@ -231,9 +232,8 @@ def run(args):
         os.chdir(cwd)
 
 if __name__ == '__main__':
-    ret = 0
     try:
         ret = run(sys.argv)
+        sys.exit(ret)
     except KeyboardInterrupt:
         sys.exit(1)
-    sys.exit(ret)

@@ -1,4 +1,5 @@
 #!/bin/python
+
 from birdy import twitter
 import yaml
 import random
@@ -9,22 +10,6 @@ from retry import retry
 # TODO: bird, birdy, twitter, tweet… so many similar names. rename crap.
 #       also, rename tcrap.
 
-# this uses .trc files for my own convenience.
-# if you don't have the t twitter client, you can roll your own .trc
-# as such, replacing things in square brackets accordingly:
-#profiles:
-#  [username]:
-#    [consumer_key]:
-#      username: [username]
-#      consumer_key: [consumer_key]
-#      consumer_secret: [consumer_secret]
-#      token: [token]
-#      secret: [secret]
-#    [more consumer keys]:
-#      [etc]
-#  [more usernames]:
-#    [etc]
-
 # spoof android client headers
 # props to https://github.com/Pilfer/PyTwitter/blob/master/twitter.py
 # we can't actually use the X-* headers though
@@ -33,7 +18,7 @@ from retry import retry
 # it probably does (not?) urlencode BEFORE signing with OAuth.
 # this is evident as a purely alphanumeric tweet will pass,
 # but one with even spaces will fail.
-# worth testing out sometime in hopes of perfect immitation.
+# oh well.
 android_headers = {
     "User-Agent": "TwitterAndroid/3.4.2 (180) sdk/8 (unknown;generic;generic;sdk;0)",
     #"X-Client-UUID": str(uuid.uuid4()),
@@ -69,12 +54,15 @@ def tweet(t, text, img=None):
 
 if __name__ == '__main__':
     import sys
-    tweeter = bird('bandlimit')
-    text = "here's a random image to test update_with_media"
-    img = '~/Downloads/xubuntu_13_04_gpu/usr/share/glmark2/textures/terrain-grasslight-512.jpg'
-    if len(sys.argv) > 1:
-        text = sys.argv[1]
-        img = None
-    if len(sys.argv) > 2:
-        img = sys.argv[2]
+    argc = len(sys.argv)
+    if argc < 2:
+        print('usage:', sys.argv[0], '{account} [text [image]]')
+        sys.exit(1)
+    tweeter = bird(sys.argv[1])
+    text = 'test tweet'
+    img = None
+    if argc > 2:
+        text = sys.argv[2]
+    if argc > 3:
+        img = sys.argv[3]
     tweeter(text, img)
