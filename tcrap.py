@@ -4,6 +4,8 @@ import yaml
 import random
 #import uuid
 
+from retry import retry
+
 # TODO: bird, birdy, twitter, tweet… so many similar names. rename crap.
 #       also, rename tcrap.
 
@@ -57,6 +59,7 @@ def getkeys(account, trc='.trc'):
     allkeys = y['profiles'][account]
     return random.choice(list(allkeys.values()))
 
+@retry(twitter.TwitterApiError, tries=10, wait=30)
 def tweet(t, text, img=None):
     if img:
         with open(img, 'br') as f:

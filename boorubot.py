@@ -7,9 +7,9 @@ import shutil
 import subprocess as sp
 import requests, requests.exceptions
 import hashlib
-import time
 from tcrap import bird
 from descgen import gendesc
+from retry import retry
 
 MAX_WIDTH = 1024
 MAX_HEIGHT = 2048
@@ -78,28 +78,14 @@ class PoopenError(sp.CalledProcessError):
             s += "\nstderr:\n{}\n".format(self.error)
         return s
 
-def get(uri, json=False, max_retries=6):
-    for i in range(max_retries):
-        if i > 0:
-            time.sleep(60*5)
-        final = (i + 1 == max_retries)
-
-        try:
-            r = requests.get(uri)
-            if r.status_code != 200:
-                raise StatusCodeError(r.status_code, uri)
-        except (requests.exceptions.ConnectionError, StatusCodeError):
-            if final: raise
-            continue
-        if not json:
-            return r
-
-        try:
-            j = r.json()
-        except ValueError:
-            if final: raise
-            continue
-        return j
+@retry((requests.exceptions.ConnectionError, StatusCodeError, ValueError), tries=6, wait=300)
+def get(uri, json=False):
+    r = requests.get(uri)
+    if r.status_code != 200:
+        raise StatusCodeError(r.status_code, uri)
+    if json:
+        return r.json()
+    return r
 
 # subprocess still comes with the same old useless wrappers
 # so we'll write our own
