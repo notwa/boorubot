@@ -9,6 +9,12 @@ restrip = lambda s: re_pedant.subn('', s)[0]
 uniq = lambda t: [x for x in OrderedDict.fromkeys(t)]
 spacelist = lambda t: [restrip(v).replace('_', ' ') for v in t.split(' ')]
 
+not_safe = (
+    'nipples',
+    'suggestive fluid',
+    'nude',
+)
+
 def humanlist(t, n):
     hs = ''
     for i, s in enumerate(t):
@@ -30,6 +36,7 @@ def gendesc(post):
     arts = uniq(spacelist(post['tag_string_artist']))
     cars = uniq(spacelist(post['tag_string_character']))
     cops = uniq(spacelist(post['tag_string_copyright']))
+    tags = uniq(spacelist(post['tag_string']))
     maxlen = 140 - 22 - 22 - 1 - 1 # limit - link - link - space - space
     maxtags = 5 # per art/car/cop
 
@@ -45,10 +52,16 @@ def gendesc(post):
     if cops[0] == '' and cars[0] == '':
         fmt = '{1} drawn by {2}'
 
-    if rats[0] == 'e':
+    rating = rats[0]
+    for tag in tags:
+        if rating == 's':
+            if tag in not_safe:
+                rating = 'q'
+
+    if rating == 'e':
         fmt = '#nsfw ' + fmt
-    #elif rats[0] == 'q':
-    #    fmt = '#lewd ' + fmt
+    elif rating == 'q':
+        fmt = '#lewd ' + fmt
 
     # h as in human
     h_arts = []
