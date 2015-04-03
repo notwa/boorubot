@@ -15,6 +15,11 @@ not_safe = (
     'nude',
 )
 
+definitely_nsfw = (
+    'pussy juice',
+    'cum',
+)
+
 def humanlist(t, n):
     hs = ''
     for i, s in enumerate(t):
@@ -57,6 +62,8 @@ def gendesc(post):
         if rating == 's':
             if tag in not_safe:
                 rating = 'q'
+        if tag in definitely_nsfw:
+            rating = 'e'
 
     if rating == 'e':
         fmt = '#nsfw ' + fmt
