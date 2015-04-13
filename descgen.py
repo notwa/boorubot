@@ -20,6 +20,10 @@ definitely_nsfw = (
     'cum',
 )
 
+not_even_once = (
+    'bestiality',
+)
+
 def humanlist(t, n):
     hs = ''
     for i, s in enumerate(t):
@@ -64,6 +68,8 @@ def gendesc(post):
                 rating = 'q'
         if tag in definitely_nsfw:
             rating = 'e'
+        if tag in not_even_once:
+            return None
 
     if rating == 'e':
         fmt = '#nsfw ' + fmt

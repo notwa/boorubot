@@ -220,6 +220,8 @@ def run(args):
             if not success:
                 continue
             desc = gendesc(post)
+            if not desc:
+                continue
             text = desc+posts+str(post['id'])
             f = dummy and printlines or tweeter
             f(text, final)
