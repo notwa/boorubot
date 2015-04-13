@@ -24,6 +24,13 @@ not_even_once = (
     'bestiality',
 )
 
+short = {
+    'dungeon ni deai wo motomeru no wa machigatteiru darou ka': 'danmachi',
+    'ano hi mita hana no namae wo bokutachi wa mada shiranai.': 'anohana',
+}
+
+shorten = lambda tags: [short[tag] if tag in short else tag for tag in tags]
+
 def humanlist(t, n):
     hs = ''
     for i, s in enumerate(t):
@@ -75,6 +82,10 @@ def gendesc(post):
         fmt = '#nsfw ' + fmt
     elif rating == 'q':
         fmt = '#lewd ' + fmt
+
+    arts = shorten(arts)
+    cars = shorten(cars)
+    cops = shorten(cops)
 
     # h as in human
     h_arts = []
