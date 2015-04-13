@@ -118,10 +118,12 @@ def gendesc(post):
     return desc
 
 if __name__ == '__main__':
+    import sys
     SITE = 'http://danbooru.donmai.us'
-    JSON = SITE+"/posts.json?tags=order:rank"
-    #JSON = SITE+"/posts.json?tags=copytags:2 chartags:0"
-    #JSON = SITE+'/posts.json?tags=bishoujo_senshi_sailor_moon'
+    if len(sys.argv) > 1:
+        JSON = SITE+"/posts.json?tags="+sys.argv[1]
+    else:
+        JSON = SITE+"/posts.json?tags=order:rank"
     import requests
     r = requests.get(JSON)
     j = r.json()
