@@ -167,7 +167,8 @@ def tryPost(uri, fn):
     r = get(uri)
     saved_md5 = hashlib.md5(r.content).hexdigest()
     if md5 != saved_md5:
-        raise HashMismatchError(saved_md5, md5)
+        lament(str(HashMismatchError(saved_md5, md5)))
+        return False, None
 
     fs = len(r.content)
     with open(fn, 'bw') as f:
