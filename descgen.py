@@ -27,6 +27,11 @@ not_even_once = (
 short = {
     'dungeon ni deai wo motomeru no wa machigatteiru darou ka': 'danmachi',
     'ano hi mita hana no namae wo bokutachi wa mada shiranai.': 'anohana',
+    'to aru kagaku no railgun': '/railgun',
+    #'to aru kagaku no railgun s': 'wtf is this?',
+    'to aru majutsu no index': '/index',
+    'to aru majutsu no index: endymion no kiseki': 'endymion no kiseki',
+    'to aru majutsu no index: new testament': 'new testament',
 }
 
 shorten = lambda tags: [short[tag] if tag in short else tag for tag in tags]
