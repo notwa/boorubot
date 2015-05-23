@@ -4,13 +4,13 @@ import argparse
 import os, os.path
 import sys
 import shutil
-import subprocess as sp
 import requests, requests.exceptions
 import hashlib
 
 from tcrap import bird
 from descgen import gendesc
 from retry import retry
+from poopen import poopen, PoopenError
 
 MAX_WIDTH = 1024
 MAX_HEIGHT = 2048
@@ -65,20 +65,6 @@ class HashMismatchError(Exception):
 class JsonFormatError(Exception):
     pass
 
-class PoopenError(sp.CalledProcessError):
-    def __init__(self, returncode, cmd, output=None, error=None):
-        self.returncode = returncode
-        self.cmd = cmd
-        self.output = output
-        self.error = error
-    def __str__(self):
-        s = "Command failed with exit status {}:\n{}".format(self.returncode, self.cmd)
-        if self.output:
-            s += "\nstdout:\n{}\n".format(self.output)
-        if self.error:
-            s += "\nstderr:\n{}\n".format(self.error)
-        return s
-
 @retry((requests.exceptions.ConnectionError, StatusCodeError, ValueError), tries=6, wait=300)
 def get(uri, json=False):
     r = requests.get(uri)
@@ -87,15 +73,6 @@ def get(uri, json=False):
     if json:
         return r.json()
     return r
-
-# subprocess still comes with the same old useless wrappers
-# so we'll write our own
-def poopen(args, env=None):
-    p = sp.Popen(args, stdout=sp.PIPE, stderr=sp.PIPE, env=env)
-    out, err = p.communicate()
-    if p.returncode != 0:
-        raise PoopenError(returncode=p.returncode, cmd=args, output=out, error=err)
-    return p.returncode, out, err
 
 def dimensions(f):
     ret, dim, err = poopen(['gm', 'identify', '-format', '%wx%h\n', f])
