@@ -73,6 +73,10 @@ def gendesc(post):
     if cops[0] == '' and cars[0] == '':
         fmt = '{1} drawn by {2}'
 
+    if 'official art' in tags:
+        if arts[0] == '':
+            fmt = fmt.replace(' drawn by {2}', ' (official art)')
+
     rating = rats[0]
     for tag in tags:
         if rating == 's':
