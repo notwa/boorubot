@@ -12,8 +12,8 @@ from descgen import gendesc
 from retry import retry
 from poopen import poopen, PoopenError
 
-MAX_WIDTH = 4096
-MAX_HEIGHT = 4096
+MAX_WIDTH = 1024
+MAX_HEIGHT = 2048
 MAX_SIZE = 3*1024*1024
 
 SITE = 'http://danbooru.donmai.us'
