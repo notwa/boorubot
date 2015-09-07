@@ -134,7 +134,7 @@ def prepimage(fn, fs):
 
 def tryPost(uri, fn):
     md5, _, ext = fn.rpartition('.')
-    if ext in ('webm', 'swf', 'zip'):
+    if ext in ('mp4', 'webm', 'swf', 'zip'):
         return False, None
 
     if os.path.isfile(fn):
@@ -154,7 +154,7 @@ def tryPost(uri, fn):
 
     try:
         final = prepimage(fn, fs)
-    except ImageLimitError as e:
+    except (ImageLimitError, PoopenError) as e:
         lament(str(e))
         return False, None
 
