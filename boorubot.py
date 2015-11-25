@@ -179,7 +179,8 @@ def run(args):
     trc = os.path.join(cwd, '.trc')
     os.chdir(outdir)
 
-    shutil.copy2(HOME+'/.trc', trc)
+    if not os.path.samefile(HOME+'/.trc', trc):
+        shutil.copy2(HOME+'/.trc', trc)
     tweeter = bird(handle, trc)
 
     j = get(json, json=True)
