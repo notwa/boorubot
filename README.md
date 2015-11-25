@@ -26,6 +26,7 @@ basically…
 ```
 pip install requests
 pip install birdy
+pip install PyYAML
 git clone https://github.com/notwa/boorubot
 cd boorubot
 $EDITOR .trc
