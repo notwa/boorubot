@@ -35,6 +35,19 @@ $EDITOR .trc
 
 it only tweets once per execution. use cron jobs or something for periodic tweets.
 
+### prerequisites
+
+* python 3.4+  
+  earlier versions of 3.x may work, but are untested.
+
+* graphicsmagick  
+  used for resizing and converting images.
+
+* optipng  
+  used for reducing png filesizes.
+
+* python packages: requests, birdy, PyYAML
+
 ## .trc files
 
 you'll need to put a `.trc` file in the directory you're running the program from.
