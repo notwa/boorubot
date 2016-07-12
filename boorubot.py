@@ -133,7 +133,11 @@ def prepimage(fn, fs):
     return final
 
 def tryPost(uri, fn):
-    remote_fn, _, ext = fn.rpartition('.')
+    name, _, ext = fn.rpartition('.')
+    # construct old-style filename for persistence
+    md5 = name[-32:]
+    fn = md5+'.'+ext
+
     if ext in ('mp4', 'webm', 'swf', 'zip'):
         return False, None
 
@@ -143,7 +147,6 @@ def tryPost(uri, fn):
 
     r = get(uri)
     saved_md5 = hashlib.md5(r.content).hexdigest()
-    md5 = remote_fn[-32:]
     if md5 != saved_md5:
         lament(str(HashMismatchError(saved_md5, md5)))
         return False, None
