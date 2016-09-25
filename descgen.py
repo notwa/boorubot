@@ -58,7 +58,7 @@ def gendesc(post):
     cars = uniq(spacelist(post['tag_string_character']))
     cops = uniq(spacelist(post['tag_string_copyright']))
     tags = uniq(spacelist(post['tag_string']))
-    maxlen = 140 - 23 - 23 - 1 - 1 # limit - link - link - space - space
+    maxlen = 140 - 1 - 1 # limit - space - space
     maxtags = 5 # per art/car/cop
 
     fmt = '{0} ({1}) drawn by {2}'
